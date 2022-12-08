@@ -3,10 +3,7 @@ function stats_decoding()
     if isempty(which('cosmo_wtf'))
         addpath('~/CoSMoMVPA/mvpa')
     end
-    
-    r=.707;
-    
-    
+     
     %% stack results
     fprintf('Loading data\n')
     files = dir('results/sub-*_decoding.mat');
@@ -36,7 +33,10 @@ function stats_decoding()
         s.se = std(x)./sqrt(s.n);
         h0mean = .25;
         s.tstat = (s.mu-h0mean)./s.se;
-        s.bf = t1smpbf(s.tstat',s.n,r)';
+        % calculate bayesfactors
+        s.bf = bayesfactor_R_wrapper(x',...
+            'returnindex',2,'verbose',false,'args','mu=0.25,rscale="medium",nullInterval=c(-Inf,0.5)');
+
         s.p_uncor = arrayfun(@(y) signrank(x(:,y),h0mean,'tail','right'),1:size(x,2));
         [~,~,s.fdr_adj_p]=fdr(s.p_uncor);
         s.tv = res_all.a.fdim.values{1};
