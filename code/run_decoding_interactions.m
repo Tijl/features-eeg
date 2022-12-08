@@ -31,7 +31,7 @@ fn = sprintf('data/derivatives/cosmomvpa/sub-%02i_task-rsvp_cosmomvpa.mat',subje
 fprintf('loading %s\n',fn);tic
 load(fn,'ds')
 fprintf('loading data finished in %i seconds\n',ceil(toc))
-outfn = sprintf('results/sub-%02i_decoding_percombo.mat',subjectnr);
+outfn = sprintf('results/sub-%02i_decoding_interactions.mat',subjectnr);
 dsbackup = ds;
 
 %% decode

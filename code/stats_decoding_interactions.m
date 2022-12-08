@@ -6,7 +6,7 @@ function stats_decoding_interactions()
     
     %% stack results
     fprintf('Loading data\n')
-    files = dir('results/sub-*_decoding_percombo.mat');
+    files = dir('results/sub-*_decoding_interactions.mat');
     res_cell={};
     cc = clock();mm='';
     for f=1:length(files)
@@ -50,5 +50,5 @@ function stats_decoding_interactions()
     
     %%
     fprintf('Saving\n')
-    save('results/stats_decoding_bycombo.mat','stats');
+    save('results/stats_decoding_interactions.mat','stats');
     fprintf('Done\n')
