@@ -22,6 +22,7 @@ f=figure(1);clf
 f.Position = [f.Position(1:2) 800 1000];
 durations = {'soa150','soa50'};h=[];
 targetlabels = {'ori','sf','color','contrast'};
+targetlabelsplot = {'ori','sf','colour','contrast'};
 for d=1:2
     a=subplot(3,2,d);hold on
     a.YLim=[.2 .4];
@@ -32,7 +33,7 @@ for d=1:2
         fill([s.tv fliplr(s.tv)],[s.mu-s.se fliplr(s.mu+s.se)],co(t,:),...
             'FaceAlpha',.2,'LineStyle','none');
         h(t) = plot(s.tv,s.mu,...
-            'DisplayName',s.targetname,'Color',co(t,:),...
+            'DisplayName',targetlabelsplot{t},'Color',co(t,:),...
             'LineWidth',2);
         [~,x] = max(s.mu);
     end
@@ -43,7 +44,7 @@ for d=1:2
     title(sprintf('%.2f Hz',1000/str2double(durations{d}(4:end))))
 
     %topo
-    a1=subplot(15,2,11+ (d==2));hold on
+    a1=subplot(15,2,11+(d==2));hold on
     axis off
     for t=1:4
         s = stats.(durations{d}).(targetlabels{t});
@@ -102,6 +103,10 @@ for d=1:2
         end
     end
     
+    %onset
+    a=subplot(3,2,5);hold on
+
+
     %peak
     a=subplot(3,2,6);hold on
     a.FontSize=12;
@@ -122,12 +127,15 @@ for d=1:2
 %             'xyOri','flipped','distWidth',.95,'showMM',0);
         %plot(s.tv(peak),t,'.','Color',co(t,:),'MarkerSize',20);
         line(s.tv(round(ci))+[-.5 .5],[t t]+.5*(d==2),'Color',co(t,:),'LineWidth',10)
+
+        text(s.tv(max(ci)),t+.5*(d==2),sprintf(' %s %.2f Hz',targetlabelsplot{t},1000/str2double(durations{d}(4:end))),'Color',co(t,:))
         drawnow
     end
-    tt = repelem(targetlabels,2,1);
-    a.YTickLabel = arrayfun(@(x) sprintf('%s %.2f Hz',tt{x},1000/str2double(durations{1 + ~mod(x,2)}(4:end))), 1:8,'UniformOutput',false);
-    a.YTick=[1:.5:4.5];a.YDir='reverse';
-    ylim([0 5])
+    tt = repelem(targetlabelsplot,2,1);
+    %a.YTickLabel = arrayfun(@(x) sprintf('%s %.2f Hz',tt{x},1000/str2double(durations{1 + ~mod(x,2)}(4:end))), 1:8,'UniformOutput',false);
+    %a.YTick=[1:.5:4.5];a.YDir='reverse';   
+    a.YTick=[];a.YDir='reverse';   
+    ylim([0.5 5])
     xlim([-100 600])
     legend(h)
     xlabel('time of peak (ms)')
