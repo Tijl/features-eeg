@@ -84,22 +84,11 @@ for d=1:2
     for t=1:4
         a=subplot(15,2,11 + 2*t + (d==2));hold on
         s = stats.(durations{d}).(targetlabels{t});
-        plot(s.tv,1+0*s.tv,'k-');
-        idx = s.bf>6;
-        plot(s.tv(idx),s.bf(idx),'o','MarkerFaceColor',co(t,:),'MarkerEdgeColor',co(t,:),'Clipping','off');
-        idx = s.bf<1/6;
-        plot(s.tv(idx),s.bf(idx),'o','MarkerFaceColor',.5*[1 1 1],'MarkerEdgeColor',.5*[1 1 1],'Clipping','off');
-        idx = s.bf>1/6 & s.bf<6;
-        plot(s.tv(idx),s.bf(idx),'o','MarkerEdgeColor','k','Clipping','off');
+        plot(s.tv,s.bf,'o','MarkerFaceColor',co(t,:),'MarkerEdgeColor',co(t,:),'Clipping','off');
         a.YScale='log';
         ylim(10.^(6*[-1 1]))
         xlim(minmax(s.tv))
-        ylabel('BF')
-        if t==4
-            xlabel('time (ms)')
-        else
-            a.XTick = [];
-        end
+        
     end
     
     %peak
