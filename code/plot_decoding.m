@@ -84,31 +84,60 @@ for d=1:2
     %bf
     for t=1:4
         a=subplot(15,2,11 + 2*t + (d==2));hold on
+        a.FontSize=12;
         s = stats.(durations{d}).(targetlabels{t});
         plot(s.tv,1+0*s.tv,'k-');
-        idx = s.bf>6;
-        plot(s.tv(idx),s.bf(idx),'o','MarkerFaceColor',co(t,:),'MarkerEdgeColor',co(t,:),'Clipping','off');
-        idx = s.bf<1/6;
-        plot(s.tv(idx),s.bf(idx),'o','MarkerFaceColor',.5*[1 1 1],'MarkerEdgeColor',.5*[1 1 1],'Clipping','off');
-        idx = s.bf>1/6 & s.bf<6;
-        plot(s.tv(idx),s.bf(idx),'o','MarkerEdgeColor','k','Clipping','off');
+        co3 = [.5 .5 .5;1 1 1;co(t,:)];
+        idx = [s.bf<1/10,1/10<s.bf & s.bf<10,s.bf>10]';
+        for i=1:3
+            x = s.tv(idx(i,:));
+            y = s.bf(idx(i,:));
+            if ~isempty(x)
+                stem(x,y,'Marker','o','Color',.6*[1 1 1],'BaseValue',1,'MarkerSize',5,'MarkerFaceColor',co3(i,:),'Clipping','off');
+                plot(x,y,'o','Color',.6*[1 1 1],'MarkerSize',5,'MarkerFaceColor',co3(i,:),'Clipping','off');
+            end
+        end
         a.YScale='log';
         ylim(10.^(6*[-1 1]))
+        a.YTick = 10.^([-5 0 5]);
         xlim(minmax(s.tv))
         ylabel('BF')
         if t==4
-            xlabel('time (ms)')
+            %xlabel('time (ms)')
         else
             a.XTick = [];
         end
     end
     
     %onset
-    a=subplot(3,2,5);hold on
-
+    a=subplot(6,2,9);hold on
+    a.FontSize=12;
+    co = vega10;
+    for t=1:4
+        s = stats.(durations{d}).(targetlabels{t});
+        try
+            [~,onsets] = max(movmean(s.bf_jackknife>6,[0 2])==1);
+            ci = prctile(onsets,[5,95]);
+        catch
+            [~,onsets] = max(movmean(s.bf>6,[0 2])==1);
+            ci = onsets+[-1 1];
+        end
+        line(s.tv(round(ci))+[-.5 .5],[t t]+.5*(d==2),'Color',co(t,:),'LineWidth',10)
+        text(s.tv(max(ci)),t+.5*(d==2),sprintf(' %s %.2f Hz',targetlabelsplot{t},1000/str2double(durations{d}(4:end))),'Color',co(t,:))
+        drawnow
+    end
+    tt = repelem(targetlabelsplot,2,1);
+    %a.YTickLabel = arrayfun(@(x) sprintf('%s %.2f Hz',tt{x},1000/str2double(durations{1 + ~mod(x,2)}(4:end))), 1:8,'UniformOutput',false);
+    %a.YTick=[1:.5:4.5];a.YDir='reverse';   
+    a.YTick=[];a.YDir='reverse';   
+    ylim([0.5 5])
+    xlim(minmax(s.tv))
+    legend(h)
+    xlabel('time of onset (ms)')
+    %title('onset decoding (95% CI)')
 
     %peak
-    a=subplot(3,2,6);hold on
+    a=subplot(6,2,10);hold on
     a.FontSize=12;
     co = vega10;
     for t=1:4
@@ -121,13 +150,7 @@ for d=1:2
             [~,peak_boot(b)] = max(mean(s.mu_all(bidx,:)));
         end
         ci = prctile(peak_boot,[5 95]);
-%         plot(s.tv(peak_boot),t+linspace(.2,.3,numel(peak_boot)),'.',...
-%             'MarkerSize',1,'Color',co(t,:));
-%         hd=distributionPlot(s.tv(peak_boot)','Color',co(t,:),'xValues',t,...
-%             'xyOri','flipped','distWidth',.95,'showMM',0);
-        %plot(s.tv(peak),t,'.','Color',co(t,:),'MarkerSize',20);
         line(s.tv(round(ci))+[-.5 .5],[t t]+.5*(d==2),'Color',co(t,:),'LineWidth',10)
-
         text(s.tv(max(ci)),t+.5*(d==2),sprintf(' %s %.2f Hz',targetlabelsplot{t},1000/str2double(durations{d}(4:end))),'Color',co(t,:))
         drawnow
     end
@@ -136,11 +159,11 @@ for d=1:2
     %a.YTick=[1:.5:4.5];a.YDir='reverse';   
     a.YTick=[];a.YDir='reverse';   
     ylim([0.5 5])
-    xlim([-100 600])
+    xlim(minmax(s.tv))
     legend(h)
     xlabel('time of peak (ms)')
     %title(sprintf('%.2f Hz',1000/str2double(durations{d}(4:end))))
-    title('peak decoding (95% CI)')
+    %title('peak decoding (95% CI)')
 end
 
 %%
