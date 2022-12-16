@@ -6,11 +6,11 @@ function stats_decoding()
      
     %% stack results
     fprintf('Loading data\n')
-    files = dir('results/sub-*_decoding.mat');
+    files = dir('../results/sub-*_decoding.mat');
     res_cell={};
     cc = clock();mm='';
     for f=1:length(files)
-        fn = sprintf('results/%s',files(f).name);
+        fn = sprintf('../results/%s',files(f).name);
         load(fn,'res');
         res.sa.contrast = (1:8)';
         res_cell{f} = res;
@@ -37,17 +37,27 @@ function stats_decoding()
         s.bf = bayesfactor_R_wrapper(x',...
             'returnindex',2,'verbose',false,'args','mu=0.25,rscale="medium",nullInterval=c(-Inf,0.5)');
 
+        % jackknife method on bayesfactors to get onsets
+        x = [];
+        combs = combnk(1:16,14); %leave-2-out
+        for i=1:size(combs,1)
+            x = [x s.mu_all(combs(i,:),:)];
+        end
+        b = bayesfactor_R_wrapper(x',...
+            'returnindex',2,'verbose',false,'args','mu=0.25,rscale="medium",nullInterval=c(-Inf,0.5)');
+        s.bf_jackknife = reshape(b,[],size(combs,1)); %[~,onsets] = max(movmean(bf_jackknife>6,[0 2])==1);
+        
         s.p_uncor = arrayfun(@(y) signrank(x(:,y),h0mean,'tail','right'),1:size(x,2));
         [~,~,s.fdr_adj_p]=fdr(s.p_uncor);
         s.tv = res_all.a.fdim.values{1};
         
         stats.(sprintf('soa%i',round(1000*s.soaduration))).(s.targetname) = s;
+        fprintf('%i/8\n',c)
     end
-    
     stats.format = 'stats.soa.targetfeature.x';
     stats.timevect = res_all.a.fdim.values{1};
     
     %%
     fprintf('Saving\n')
-    save('results/stats_decoding.mat','stats');
+    save('../results/stats_decoding.mat','stats');
     fprintf('Done\n')
