@@ -5,15 +5,37 @@ addpath('~/Repository/CommonFunctions/CircStat/')
 
 %% load neural data
 durations = [150 50];
-for d = 1:2
-    rdm={};
-    for s=1:16
-        x=load(sprintf('../results/sub-%02i_decoding_rdm_%ims.mat',s,durations(d)));
-        rdm{s} = cosmo_average_samples(x.rdm,'split_by',{'target1','target2'});
-        stimtable = x.stimtable;
-        stimtable.f_colour = stimtable.f_color;
+if exist('../results/EEG_RDMs.mat')
+    fprintf('loading ../results/EEG_RDMs.mat')
+    load('../results/EEG_RDMs.mat')
+else
+    rdm_cell_all = {};
+    for d = 1:2
+        for s=1:16
+            x=load(sprintf('../results/sub-%02i_decoding_rdm_%ims.mat',s,durations(d)));
+            rdm = cosmo_average_samples(x.rdm,'split_by',{'target1','target2'});
+            stimtable = x.stimtable;
+            stimtable.f_colour = stimtable.f_color;
+            tv = rdm.a.fdim.values{1};
+
+            X = nan(175,256,256);
+            for r = 1:length(rdm.sa.target1)
+                t1 = 1+rdm.sa.target1(r);
+                t2 = 1+rdm.sa.target2(r);
+                X(:,t1,t2) = rdm.samples(r,:);
+                X(:,t2,t1) = rdm.samples(r,:);
+            end
+            rdm_cell_all{d,s} = X
+        end
     end
-    rdm_cell{d} = cosmo_average_samples(cosmo_stack(rdm),'split_by',{'target1','target2'});
+    groupRDMsoa150 = permute(cat(4,rdm_cell_all{1,:}),[4 1 2 3]);
+    groupRDMsoa50 = permute(cat(4,rdm_cell_all{2,:}),[4 1 2 3]);
+
+    meanRDMsoa150 = squeeze(mean(groupRDMsoa150));
+    meanRDMsoa50 = squeeze(mean(groupRDMsoa50));
+
+    % save RDM (so loading is faster on second run)
+    save('../results/EEG_RDMs.mat','groupRDMsoa150','groupRDMsoa50','meanRDMsoa150','meanRDMsoa50','tv','stimtable','-v7.3');
 end
 
 %% read stimuli
@@ -26,8 +48,8 @@ for s=1:256
 end
 
 %% load behavioural data
-if exists('../results/stats_behaviour.mat')
-    load('../results/stats_behaviour.mat','RDMmean')
+if exist('../results/stats_behaviour.mat')
+    load('../results/stats_behaviour.mat','RDMmean','T')
 else
     fns = dir('../data_online_triplets/jatos_results_*.txt');
     T = [];subnr = 0;
@@ -58,14 +80,14 @@ else
             end
         end
     end
-    
+
     % re-map stimuli
     fprintf('re-map\n')
     [~,T.stim0number]=ismember(T.stim0,stims);
     [~,T.stim1number]=ismember(T.stim1,stims);
     [~,T.stim2number]=ismember(T.stim2,stims);
     fprintf('Done\n')
-    
+
     % make RDM
     fprintf('create RDM\n')
     allcombs = [T.stim0number T.stim1number T.stim2number];
@@ -86,16 +108,17 @@ else
     end
     RDMmean = 1 - RDMsum./RDMcounts;
     fprintf('Done\n')
-    
+
     % save RDM
-    save('../results/stats_behaviour.mat','RDMmean')
+    save('../results/stats_behaviour.mat','RDMmean','T')
 end
 
 %% create embedding
 fprintf('create embedding\n')
+rng(1)
 Y = RDMmean;
 Y(eye(size(Y))==1)=0;
-X1 = mdscale(Y,2,'Start','random','Criterion','metricstress','Replicates',10);
+X1 = mdscale(Y,2,'Start','random','Criterion','metricstress');
 
 %% models
 modelnames = {'ori','sf','colour','contrast','behaviour'};
@@ -105,7 +128,7 @@ for m=1:5
     if m==5
         models{m} = RDMmean;
     elseif m==1
-        ori = stimtable.feature_ori; 
+        ori = stimtable.feature_ori;
         %make ori RDM circular
         r = min(cat(3,abs(ori - ori'),abs(ori - (ori-180)'),abs(ori - (ori+180)')),[],3);
         models{m} = r;
@@ -115,28 +138,40 @@ for m=1:5
     modelvec(:,m) = models{m}(loweridx);
 end
 
+%% compute model correlations with EEG and their BF
+if exist('../results/stats_rsa.mat')
+    load('../results/stats_rsa.mat','rmodel','rmodel_bf')
+else
+    % models
+    fprintf('Computing model correlations')
+    rdm_cell = {groupRDMsoa150,groupRDMsoa50};
+    rmodel = [];
+    rmodel_bf = [];
+    for d=1:2
+        rdm = rdm_cell{d};
+        loweridx = find(tril(ones(256),-1)==1);
+        for m=1:5
+            for s=1:size(rdm,1)
+                rmodel(s,:,m,d) = corr(squeeze(rdm(s,:,loweridx))', modelvec(:,m),'type','Spearman');
+            end
+            rmodel_bf(:,m,d) = bayesfactor_R_wrapper(rmodel(:,:,m,d)','returnindex',2,'verbose',false,'args','mu=0,rscale="medium",nullInterval=c(-Inf,0.5)');
+            fprintf('.')
+        end
+    end
+    fprintf('done\n')
+    % save RDM
+    save('../results/stats_rsa.mat','rmodel','rmodel_bf')
+end
+
 %% make figure
 f=figure(1);clf
-f.Position = [f.Position(1:2) 800 1000];
+f.Position = [f.Position(1:2) 800 700];
 f.Resize='off';
 nsub = numel(unique(T.subjectnr));
+tv = -100:4:596;
 
-% behavioural results
-a=subplot(3,2,1);
-imagesc(RDMmean);axis square
-a.YDir='normal';
-a.FontSize=12;
-p = a.Position;
-c=colorbar;
-a.Position = p;
-c.Label.String='dissimilarity';
-title(sprintf('Behavioural RDM (n=%i)',nsub))
-colormap inferno
-xlabel('stimulus')
-ylabel('stimulus')
-
-% mds 
-a=subplot(3,2,2);hold on
+% mds
+a=subplot(2,2,2);hold on
 a.FontSize=12;
 X=X1;
 aw=range(X(:))*.02;
@@ -150,48 +185,23 @@ end
 a.XTick = [];
 a.YTick = [];
 title({'2-dimensional embedding of similarities','(mdscale-metricstress)'})
+axis off
 
-%model correlations
-a=subplot(3,2,3);
+%model mds
+a=subplot(2,2,1);
+a.FontSize=16;
+rng(10)
 R = corr(modelvec,'type','spearman');
-R(eye(size(R))==1)=nan;
-imagesc(R)
-axis square
-hold on
-a.FontSize=14;
-colormap inferno;
-a.YDir = 'normal';
-%c=colorbar;c.Label.String='model correlation';
-a.XTick = 1:5;
-a.YTick = 1:5;
+Y = mdscale(squareform(pdist(modelvec','spearman')),2);
+aw = .9*[-1 1]*max(range(minmax(Y')));
 
-co = tab10;
-for m=1:5
-    cmodelnames{m} = ['\bf{\',sprintf('color[rgb]{%f %f %f}%s}',co(m,1),co(m,2),co(m,3),modelnames{m})];
-end
-
-%cmodelnames = {'\bf{\color[rgb]{1 1 1}ori}','\color{red}sf','\color{red}colour','\color{red}contrast','behaviour'};
-a.XTickLabel = cmodelnames;
-a.YTickLabel = cmodelnames;
-for x=1:5
-    for y=1:5
-        if (x==5 && y<5) | (y==5 && x<5) | 1
-            r = R(x,y);
-            if r>0 || r<1
-                cc = flipud(inferno(200));
-                c = cc(find(r<=linspace(a.CLim(1),a.CLim(2),size(cc,1)),1),:);
-                text(x,y,sprintf('%.3f',r),'Color',c,'HorizontalAlignment','center')
-            end
-        end
+for i=5
+    for j=1:4
+        line(Y([i j],1)',Y([i j],2)','LineWidth',20*abs(R(i,j)),'Color','k');hold on    
     end
 end
 
-%model mds
-a=subplot(3,2,4);
-a.FontSize=16;
-rng(1)
-Y = mdscale(squareform(pdist(modelvec','spearman')),2);
-aw = .9*[-1 1]*max(range(minmax(Y')));
+modelnames = {'orientation','SF','colour','contrast','behaviour'};
 for i=1:5
     x = Y(i,1);
     y = Y(i,2);
@@ -202,54 +212,82 @@ for i=1:5
 end
 axis off
 
-% corr with neural data
-a=subplot(3,2,5);
-
-% models
-rmodel = [];
-for d=1:2
-    rdm = rdm_cell{d};
-    tv = rdm.a.fdim.values{1};
-    X = nan(175,256,256);
-    for r = 1:length(rdm.sa.target1)
-        t1 = 1+rdm.sa.target1(r);
-        t2 = 1+rdm.sa.target2(r);
-        X(:,t1,t2) = rdm.samples(r,:);
-        X(:,t2,t1) = rdm.samples(r,:);
-    end
-    loweridx = find(tril(ones(256),-1)==1);
-    for m=1:5
-        rmodel(:,m,d) = corr(X(:,loweridx)', modelvec(:,m),'type','Spearman');
-    end
-end
-
 % plot
 plotnr = 4;
 for d=1:2
     plotnr=plotnr+1;
-    a = subplot(3,2,plotnr);hold on
+    a = subplot(4,2,plotnr);hold on
     a.FontSize=12;a.ColorOrder=co;
-    rdm = rdm_cell{d};
-    tv = rdm.a.fdim.values{1};
-    X = nan(175,256,256);
-    for r = 1:length(rdm.sa.target1)
-        t1 = 1+rdm.sa.target1(r);
-        t2 = 1+rdm.sa.target2(r);
-        X(:,t1,t2) = rdm.samples(r,:);
-        X(:,t2,t1) = rdm.samples(r,:);
+
+    h=[];
+    for i=1:5
+
+        mu = squeeze(mean(rmodel(:,:,i,d)));
+        se = squeeze(std(rmodel(:,:,i,d)))./sqrt(size(rmodel,1)-1);
+
+        fill([tv fliplr(tv)],[mu-se fliplr(mu+se)],co(i,:),...
+            'FaceAlpha',.2,'LineStyle','none');
+        h(i) = plot(tv,mu,'Color',co(i,:),...
+            'LineWidth',2);
     end
-    loweridx = find(tril(ones(256),-1)==1);    
-    plot(tv,rmodel(:,:,d),'LineWidth',2)
-    legend(modelnames)
-    ylim([-.05 0.4])
+    legend(h,modelnames)
+    ylim([-.02 0.25])
     xlim([-100 600])
-    xlabel('time (ms)')
+    xlabel('Time (ms)')
 
     title(sprintf('%.2f Hz',1000/durations(d)))
-    ylabel('model correlation with EEG')
+    ylabel('model-EEG correlation')
     drawnow
 end
 
+% plot BF
+plotnr = 6;
+for d=1:2
+    plotnr=plotnr+1;
+    a = subplot(4,2,plotnr); %make a plot, then split it in 5 plots later
+    a.FontSize=12;
+    axis off
+    apos = a.Position;
+    co = tab10(5);
+    XX=[];
+    for i=1:5
+        a2 = axes('Position',[apos(1),apos(2)+apos(4)-i*apos(4)./5,apos(3),apos(4)./5]);
+        a2.FontSize = 12;hold on
+
+        bf = rmodel_bf(:,i,d);
+
+        plot(tv,1+0*tv,'k-');
+
+        co3 = [.5 .5 .5;1 1 1;co(i,:)];
+        idx = [bf<1/10,1/10<bf & bf<10,bf>10]';
+        for c=1:3
+            x = tv(idx(c,:));
+            y = bf(idx(c,:));
+            if ~isempty(x)
+                stem(x,y,'Marker','o','Color',.6*[1 1 1],'BaseValue',1,'MarkerSize',5,'MarkerFaceColor',co3(c,:),'Clipping','off');
+                plot(x,y,'o','Color',.6*[1 1 1],'MarkerSize',5,'MarkerFaceColor',co3(c,:),'Clipping','off');
+            end
+        end
+        a2.YScale='log';
+        a2.YLim = 10.^(6*[-1 1]);
+        if mod(i,2)
+            a2.YTick = 10.^(5*[-1  1]);
+            a2.Color = .9*[1 1 1];
+        else
+            a2.YTick =[];
+        end
+        a2.XLim = minmax(tv);
+        if i==3
+            ylabel('Bayes Factor')
+        end
+        if i==5
+            xlabel('Time (ms)')
+        else
+            a2.XTick = [];
+        end
+
+    end
+end
 
 
 %% save
