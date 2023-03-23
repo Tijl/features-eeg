@@ -1,4 +1,4 @@
-function preprocessing_fastfeatures(partid)
+function run_preprocessing(partid)
 
     %% eeglab
     if ~ismac

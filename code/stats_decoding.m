@@ -11,11 +11,11 @@ end
 
 %% stack results
 fprintf('Loading data\n')
-files = dir('../results/sub-*_decoding.mat');
+files = dir('results/sub-*_decoding.mat');
 res_cell={};
 cc = clock();mm='';
 for f=1:length(files)
-    fn = sprintf('../results/%s',files(f).name);
+    fn = sprintf('results/%s',files(f).name);
     load(fn,'res');
     res.sa.contrast = (1:8)';
     res_cell{f} = res;
@@ -57,7 +57,7 @@ for c = 1:8
 
     % use jackknife method and calculate bayesfactors to get onsets
     x = [];
-    combs = combnk(1:16,14); %leave-2-out
+    combs = combnk(1:length(files),(length(files)-2)); %leave-2-out
     for i=1:size(combs,1)
         x = [x s.mu_all(combs(i,:),:)];
     end
@@ -98,5 +98,5 @@ stats.timevect = res_all.a.fdim.values{1};
 
 %%
 fprintf('Saving\n')
-save('../results/stats_decoding.mat','stats');
+save('results/stats_decoding.mat','stats');
 fprintf('Done\n')

@@ -13,7 +13,6 @@ cnames = {'Colour x Contrast','SF x Contrast','SF x Colour',...
 
 feats = cellfun(@(x) strsplit(x, '_'), combos, 'UniformOutput', false);
 feats = vertcat(feats{:}); % To remove nesting of cell array newA
-featnames = unique(feats);
 targetlabels = {'Orientation', 'SF','Colour','Contrast'};
 
 durations = {'soa150','soa50'};h=[];
@@ -25,28 +24,14 @@ tv = stats.timevect;
 co = tab10;
 featco = [3 2 2 1 1 1; 4 4 3 4 3 2]'; % map pairs of feats to individual targetlabels
 
-% bflims = [100 inf; 10 100; 3 10; 1 3; 1/3 1; -inf 1/3];
-% bfalpha = [1 .7 .5 .9 .9 .9];
-ylims = [10e-4 13e5];
-
-% bflabelx = [150 200 500 900; -500 -500 -500 -500];
-% bflabely = [10e5 10e3 10e3 10e5; 10e5 1000 10e5 10e5];
-
-noev = [0.7 0.7 0.7];
-null = [.5 .5 .5];
-black = [0 0 0];
-
-% bffacecols = [black; black; black; noev;  noev;  null];
-
 onsetys = [.475 .475 .475 .49 .49 .49];
 peakys = [.522 .527 .547 .507 .507 .508];
 
 yl = [.47 .56; .47 .56; .47 .565; .488 .52; .488 .52; .488 .52];
 
-
 %% plot interaction per plot
 
-for d=1 % only plot soa150
+for d=1:2 % only plot soa150
     f=figure(d);clf
     f.Position = [f.Position(1:2) 1200 900];
 
@@ -75,14 +60,17 @@ for d=1 % only plot soa150
 
         % plot onsets
         if ~isnan(dat.onset) % if reliable onset time
-            line(onsetci+[-.5 .5],[onsetys(fplot) onsetys(fplot)],'Color','k','LineWidth',10)
-            text(max(onsetci),onsetys(fplot),sprintf(' %s',cnames{fplot}),'Color','k')
+            % plot onset and peak CIs
+            plot(dat.onset,onsetys(fplot),'.k','MarkerSize',12)
+            line(onsetci+[-.5 .5],[onsetys(fplot) onsetys(fplot)],'Color','k','LineWidth',2)
+            text(max(onsetci)+10,onsetys(fplot),sprintf(' %s',cnames{fplot}),'Color','k','Fontsize',14);
         end
         drawnow
 
         % plot peaks
-        line(peakci+[-.5 .5],[peakys(fplot) peakys(fplot)],'Color','k','LineWidth',10)
-        text(max(peakci),peakys(fplot),sprintf(' %s',cnames{fplot}),'Color','k')
+        plot(dat.peak,peakys(fplot),'.k','MarkerSize',12)
+        line(peakci+[-.5 .5],[peakys(fplot) peakys(fplot)],'Color','k','LineWidth',2)
+        text(max(peakci)+10,peakys(fplot),sprintf(' %s',cnames{fplot}),'Color','k','Fontsize',14);
 
         % now do onsets and peaks for individual features
         if fplot<4
@@ -97,16 +85,18 @@ for d=1 % only plot soa150
             fdat = stats.(durations{d}).(fname);
 
             % onset
-            line(fdat.onsetci+[-.5 .5],[onsetys(fplot)+offs*fe onsetys(fplot)+offs*fe],'Color',co(featco(fplot,fe),:),'LineWidth',10)
-            text(max(fdat.onsetci),onsetys(fplot)+offs*fe,sprintf(' %s',fnamelabel),'Color',co(featco(fplot,fe),:));
+            plot(fdat.onset,onsetys(fplot)+offs*fe,'.','Color',co(featco(fplot,fe),:),'MarkerSize',12)
+            line(fdat.onsetci+[-.5 .5],[onsetys(fplot)+offs*fe onsetys(fplot)+offs*fe],'Color',co(featco(fplot,fe),:),'LineWidth',2)
+            text(max(fdat.onsetci)+10,onsetys(fplot)+offs*fe,sprintf(' %s',fnamelabel),'Color',co(featco(fplot,fe),:),'Fontsize',14);
 
             % peak
-            line(fdat.peakci+[-.5 .5],[peakys(fplot)+offs*fe peakys(fplot)+offs*fe],'Color',co(featco(fplot,fe),:),'LineWidth',10)
-            text(max(fdat.peakci),peakys(fplot)+offs*fe,sprintf(' %s',fnamelabel),'Color',co(featco(fplot,fe),:));
+            plot(fdat.peak,peakys(fplot)+offs*fe,'.','Color',co(featco(fplot,fe),:),'MarkerSize',12)
+            line(fdat.peakci+[-.5 .5],[peakys(fplot)+offs*fe peakys(fplot)+offs*fe],'Color',co(featco(fplot,fe),:),'LineWidth',2)
+            text(max(fdat.peakci)+10,peakys(fplot)+offs*fe,sprintf(' %s',fnamelabel),'Color',co(featco(fplot,fe),:),'Fontsize',14);
         end
 
-        text(min(fdat.onsetci)-100,onsetys(fplot)+offs,'onset','Color','k');
-        text(min(fdat.peakci)-90,peakys(fplot)+offs,'peak','Color','k');
+        text(min(fdat.onsetci)-120,onsetys(fplot)+offs,'onset','Color','k','Fontsize',14);
+        text(min(fdat.peakci)-110,peakys(fplot)+offs,'peak','Color','k','Fontsize',14);
 
         title(cnames{fplot})
         xlim([-100 600]);
@@ -149,7 +139,7 @@ for d=1 % only plot soa150
     end
 
     %% save
-    fn = sprintf('figures/decodingconjunction%s1per',durations{d});
+    fn = sprintf('figures/Figure4_%s',durations{d});
     print(gcf,'-dpng','-r500',fn)
     im=imread([fn '.png']);
     [i,j]=find(mean(im,3)<255);margin=2;
