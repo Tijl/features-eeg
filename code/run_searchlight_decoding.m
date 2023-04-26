@@ -36,7 +36,6 @@ fprintf('loading %s\n',fn);tic
 load(fn,'ds')
 fprintf('loading data finished in %i seconds\n',ceil(toc))
 outfn = sprintf('results/sub-%02i_decoding_searchlight.mat',subjectnr);
-dsbackup = ds;
 
 %% set up decoding
 ma={};
@@ -46,8 +45,17 @@ ma.progress = 0;
 
 measure = @cosmo_crossvalidation_measure;
 
+%% channel neighbours 
+
+% change O9/O10 to I1/I2 
+chans = ds.a.fdim.values{1};
+chans{ismember(chans,'O9')} = 'I1';
+chans{ismember(chans,'O10')} = 'I2';
+ds.a.fdim.values{1} = chans;
+dsbackup = ds;
+
 % get channel neighbours
-nh1 = cosmo_meeg_chan_neighborhood(ds,'count',4,'label','dataset','label_threshold',.99);
+nh1 = cosmo_meeg_chan_neighborhood(ds,'count',4,'label','dataset','label_threshold',.80);
 nh2 = cosmo_interval_neighborhood(ds,'time','radius',0);
 nh = cosmo_cross_neighborhood(ds,{nh1,nh2});
 

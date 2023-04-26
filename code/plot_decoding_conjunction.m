@@ -139,7 +139,12 @@ for d=1:2 % only plot soa150
     end
 
     %% save
-    fn = sprintf('figures/Figure4_%s',durations{d});
+    if d ==1 
+        fn = sprintf('figures/Figure4_%s',durations{d});
+    else
+        fn = sprintf('figures/Supp_conjunction_%s',durations{d});
+    end
+    
     print(gcf,'-dpng','-r500',fn)
     im=imread([fn '.png']);
     [i,j]=find(mean(im,3)<255);margin=2;

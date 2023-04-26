@@ -54,8 +54,8 @@ fc = combnk(1:4,2);
 
 % 2 way combinations of levels eg orientation 1-4 combined with contrast
 % 1-4 as class 1 for decoding, and reverse as class 2
-%% two way combinations
 
+%% two way combinations
 % for two way feature combinations, use 2 stimulus types per class. 
 % use 2 levels per each of 2 features
 
@@ -74,7 +74,8 @@ end
 
 % THIS IS THE GENERAL COMBINATION STRATEGY
 % get indices for which stimulus feature goes into each decoding class
-% combine features for two classes that are equal in features but differ on the 2-way interactions
+% combine features for two classes that are equal on single features
+% but differ on the 2-way interactions
 lfeats = zeros(2,2,2); % stimnumber (2 per class) x feature type (2 of ori,sf,col,con) x class (decoding class 1 vs 2)
 lfeats(:,1,1) = [1 2]; % feature1, class 1
 lfeats(:,1,2) = [2 1]; % feature1, class 2
@@ -106,7 +107,7 @@ for d = 1:length(durations)
                     classidx = lfeats(i,:,n); % which level number for each feature according to decoding class
                     idx = ds.sa.(sprintf('f_%s',feats{1}))==fl(classidx(1),1)&...
                         ds.sa.(sprintf('f_%s',feats{2}))==fl(classidx(2),2); % subtypeA - level for that feature
-                    ds.sa.targets(idx) = n; % class 1
+                    ds.sa.targets(idx) = n; % class num
                 end
             end
             

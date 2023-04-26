@@ -9,26 +9,21 @@ function run_preprocessing(partid)
         addpath('~/PHD/Matlabtoolboxes/eeglab')
     end
     eeglab
+    pop_editoptions('option_savetwofiles', 0);
     
     %% get files
-
-    datapath = 'data';
     
-    contfn = sprintf('%s/derivatives/eeglab/sub-%02i_task-rsvp_continuous.set',datapath,partid);
+    contfn = sprintf('data/derivatives/eeglab/sub-%02i_task-rsvp_continuous.set',partid);
     if isfile(contfn)
         fprintf('Using %s\n',contfn)
     	EEG_cont = pop_loadset(contfn);
     else
         % load EEG file
-        EEG_raw = pop_loadbv(sprintf('%s/sub-%02i/eeg/',datapath,partid), sprintf('sub-%02i_task-rsvp_eeg.vhdr',partid));
+        EEG_raw = pop_loadbv(sprintf('data/sub-%02i/eeg/',partid), sprintf('sub-%02i_task-rsvp_eeg.vhdr',partid));
         EEG_raw = eeg_checkset(EEG_raw);
         EEG_raw.setname = partid;
         EEG_raw = eeg_checkset(EEG_raw);
 
-        % re-reference
-        EEG_raw = pop_chanedit(EEG_raw, 'append',1,'changefield',{2 'labels' 'Cz'},'setref',{'' 'Cz'});
-        EEG_raw = pop_reref(EEG_raw, [],'refloc',struct('labels',{'Cz'},'sph_radius',{[]},'sph_theta',{[]},'sph_phi',{[]},'theta',{[]},'radius',{[]},'X',{[]},'Y',{[]},'Z',{[]},'type',{''},'ref',{''},'urchan',{[]},'datachan',{0}));
-        
         % high pass filter
         EEG_raw = pop_eegfiltnew(EEG_raw, 0.1,[]);
 
@@ -76,6 +71,6 @@ function run_preprocessing(partid)
     cosmo_check_dataset(ds,'meeg');
     
     %% save epochs
-    save(sprintf('%s/derivatives/cosmomvpa/sub-%02i_task-rsvp_cosmomvpa.mat',datapath,partid),'ds','-v7.3')
+    save(sprintf('data/derivatives/cosmomvpa/sub-%02i_task-rsvp_cosmomvpa.mat',partid),'ds','-v7.3')
     
 end

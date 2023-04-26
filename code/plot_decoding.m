@@ -1,8 +1,7 @@
-%%
+%% add paths
 addpath('~/Repository/CommonFunctions/Matplotlibcolors2/')
-% addpath('~/Repository/CommonFunctions/distributionPlot/')
 addpath('~/CoSMoMVPA/mvpa/')
-% addpath('~/fieldtrip');
+addpath('~/fieldtrip');
 
 ft_defaults;
 
@@ -16,7 +15,8 @@ end
 res_searchlight = cosmo_fx(cosmo_stack(res_cell),@mean,{'soaduration','targetfeature'});
 res_searchlight.sa.d = 1+ (res_searchlight.sa.soaduration>0.1);
 
-layout=cosmo_meeg_find_layout(res_searchlight);
+%% get layout
+layout=cosmo_meeg_find_layout(res_searchlight,'label_threshold',.80);
 
 cfg={};
 ft = ft_timelockanalysis(cfg,cosmo_map2meeg(res_searchlight));
@@ -32,6 +32,7 @@ targetlabelsplot = {'Orientation','SF','Colour','Contrast'};
 
 tv = stats.timevect;
 for d=1:2
+    clear a
     a=subplot(3,2,d);hold on
     a.YLim=[.23 .5];
     a.FontSize=12;
@@ -161,10 +162,6 @@ for d= 1
         set(gca,'YDir','normal')
         cb=colorbar();
         cb.Ticks = [ts(f,1) 0.25 ts(f,2)];
-
-        %         dlabels = {'below chance' '0.25 chance' 'above chance'};
-        %         dlabels = cellfun(@(x) strrep(x,' ','\newline'), dlabels,'UniformOutput',false);
-        %         cb.TickLabels = dlabels;
 
         set(gca,'XTick',[0:200:400 max(timv)],'XTickLabel',num2cell(xlab));
         set(gca,'YTick',[0:200:400 max(timv)],'YTickLabel',num2cell(xlab));

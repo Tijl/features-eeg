@@ -26,14 +26,14 @@ function run_decoding(subjectnr)
         nproc=cosmo_parallel_get_nproc_available();
     end
     
-    %% decoding pilot
+    %% load data
     fn = sprintf('data/derivatives/cosmomvpa/sub-%02i_task-rsvp_cosmomvpa.mat',subjectnr);
     fprintf('loading %s\n',fn);tic
     load(fn,'ds')
     fprintf('loading data finished in %i seconds\n',ceil(toc))
     outfn = sprintf('results/sub-%02i_decoding.mat',subjectnr);
     dsbackup = ds;
-        
+    
     %% decode
     durations = [0.15 0.05];
     res_cell={};

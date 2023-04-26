@@ -83,22 +83,17 @@ for d=1:2
         end
     end
 
-    %% labels
-% 
-%     for l = 1:4
-%         annotation('textbox',[.025 0.83-.22*(l-1) .05 .05],'String',targetnames{l},...
-%             'FontSize',24,'Color',co(l,:),...
-%             'HorizontalAlignment','center','LineStyle','none');
-%     end
-
-    %%
-    fn = sprintf('figures/decoding_interaction_peak%s',durations{d});
+    %% saving
+    if d == 1
+        fn = sprintf('figures/Figure3_decoding_interaction_peak%s',durations{d});
+    else
+        fn = sprintf('figures/Supp_decoding_interaction_peak%s',durations{d});        
+    end
     print(gcf,'-dpng','-r500',fn)
     im=imread([fn '.png']);
     [i,j]=find(mean(im,3)<255);margin=2;
     imwrite(im(min(i-margin):max(i+margin),min(j-margin):max(j+margin),:),[fn '.png'],'png');
-
+    
     exportgraphics(gcf,[fn '.pdf'],'ContentType','vector')
-
 end
 
