@@ -1,5 +1,5 @@
 %% add paths
-addpath('~/Repository/CommonFunctions/Matplotlibcolors2/')
+addpath('~/Repository/CommonFunctions/matplotlib/')
 addpath('~/CoSMoMVPA/mvpa/')
 addpath('~/fieldtrip');
 
@@ -9,7 +9,7 @@ ft_defaults;
 
 res_cell = {};
 for s=1:16
-    x=load(sprintf('results/sub-%02i_decoding_searchlight.mat',s));
+    x=load(sprintf('../results/sub-%02i_decoding_searchlight.mat',s));
     res_cell{s} = x.res;
 end
 res_searchlight = cosmo_fx(cosmo_stack(res_cell),@mean,{'soaduration','targetfeature'});
@@ -22,7 +22,7 @@ cfg={};
 ft = ft_timelockanalysis(cfg,cosmo_map2meeg(res_searchlight));
 
 %% plot
-load('results/stats_decoding.mat')
+load('../results/stats_decoding.mat')
 
 f=figure(1);clf
 f.Position = [f.Position(1:2) 800 1000];
@@ -31,6 +31,7 @@ targetlabels = {'ori','sf','color','contrast'};
 targetlabelsplot = {'Orientation','SF','Colour','Contrast'};
 
 tv = stats.timevect;
+ha=[];
 for d=1:2
     clear a
     a=subplot(3,2,d);hold on
@@ -38,9 +39,9 @@ for d=1:2
     a.FontSize=12;
     % chance line
     plot([min(tv) max(tv)],[.25 .25],'Color',[.5 .5 .5])
-    co = tab10;%vega10;
+    co = tab10; %vega10;
     for t=1:4
-        
+
         % plot decoding and standard error
         s = stats.(durations{d}).(targetlabels{t});
         fill([tv fliplr(tv)],[s.mu-s.se fliplr(s.mu+s.se)],co(t,:),...
@@ -48,24 +49,24 @@ for d=1:2
         h(t) = plot(tv,s.mu,...
             'DisplayName',targetlabelsplot{t},'Color',co(t,:),...
             'LineWidth',2);
-        
+
         % plot onset and peak CIs
         yval = 0.47-t*.015;
         plot([s.onset s.peak],[yval yval],'.','Color',co(t,:),'MarkerSize',12)
         line(s.onsetci+[-.5 .5],[yval yval],'Color',co(t,:),'LineWidth',2)
         line(s.peakci+[-.5 .5],[yval yval],'Color',co(t,:),'LineWidth',2)
         drawnow
-        
+
     end
     text(min(s.onsetci)-90,0.47-.015,'onset')
     text(max(s.peakci)+40,0.47-.015,'peak')
-    
+
     legend(h)
     ylabel('Accuracy')
     xlabel('Time (ms)')
     xlim(minmax(tv))
     title(sprintf('%.2f Hz',1000/str2double(durations{d}(4:end))))
-    
+
     %topo
     a1=subplot(15,2,11+(d==2));hold on
     axis off
@@ -73,11 +74,11 @@ for d=1:2
         s = stats.(durations{d}).(targetlabels{t});
         [~,tidx] = max(s.mu);
         x = res_searchlight.samples(res_searchlight.sa.targetfeature==t & res_searchlight.sa.d==d,res_searchlight.fa.time==tidx);
-        
+
         ft.avg(:,:) = repmat(x',1,size(ft.avg,2));
-        
+
         mrange = prctile(x,[5 95]);
-        
+
         a1pos = a1.Position;
         aw = a1pos(3);
         aw2 = aw/4;
@@ -92,6 +93,8 @@ for d=1:2
         cfg.xlim = tv([tidx tidx+1]);
         cfg.layout = layout;
         cfg.showscale = 'no';
+        cfg.figure = a;
+        cfg.interactive ='no';
         cfg.comment = 'no';
         cfg.markersymbol = '.';
         cfg.style = 'straight';
@@ -101,9 +104,9 @@ for d=1:2
         a.FontSize = 12;
         a.Colormap = co3;
         set(a.Children,'LineWidth',.5)
-        drawnow
+        ha(t,d)=a;
     end
-    
+
     %bf
     for t=1:4
         a=subplot(15,2,11 + 2*t + (d==2));hold on
@@ -132,12 +135,21 @@ for d=1:2
         end
     end
 end
+for d=1:2
+    for t=1:4
+        co3 = [linspace(1,co(t,1),100);...
+            linspace(1,co(t,2),100);...
+            linspace(1,co(t,3),100)]';
+        set(ha(t,d),'Colormap',co3);
+    end
+end
 
 %% timegens
 
-load('results/stats_timegen.mat')
+load('../results/stats_timegen.mat')
 
-cmap = brewermap(1000,'PiYG');
+%cmap = brewermap(1000,'PiYG');
+cmap = cividis();
 
 timv = stats.timevect;
 timerv = fliplr(timv);
@@ -148,27 +160,28 @@ ts = [0.24 0.26; .22 .28; .22 .28; .22 .28]; % scales
 
 for d= 1
     for f = 1:length(targetlabels)
-        
+
         a=subplot(7,4,20+f);hold on
-        
+
         dat = stats.(durations{d}).(targetlabels{f});
         mu = reshape(dat.mu,length(timv),length(timv));
         bf = reshape(dat.bf,length(timv),length(timv));
         mu(bf<10) = .25;
-        
+
         %%% plot time gen decoding
         ax=imagesc(timv,timv,(mu),ts(f,:));
         colormap(gca,cmap)
         set(gca,'YDir','normal')
         cb=colorbar();
         cb.Ticks = [ts(f,1) 0.25 ts(f,2)];
-
+        xlim([0 400])
+        ylim([0 400])
         set(gca,'XTick',[0:200:400 max(timv)],'XTickLabel',num2cell(xlab));
         set(gca,'YTick',[0:200:400 max(timv)],'YTickLabel',num2cell(xlab));
         if f>1
             set(gca,'YTickLabel',[])
         end
-        
+
         xlabel('Training time (ms)');
         if f ==1
             ylabel('Testing time (ms)');
@@ -176,11 +189,11 @@ for d= 1
         axis square
         title(targetlabelsplot{f},'Color',co(f,:))
         set(gca,'Fontsize',12)
-        
+
     end
 end
 
-%% annotate and save
+%% annotate
 
 annotation('textbox',[0.05 .86 .1 .1],...
     'String','A','FontSize',20,'LineStyle','none')
@@ -188,7 +201,8 @@ annotation('textbox',[0.05 .86 .1 .1],...
 annotation('textbox',[0.05 .255 .1 .1],...
     'String','B','FontSize',20,'LineStyle','none')
 
-fn = 'figures/Figure2';
+%% save
+fn = '../figures/Figure2';
 print(gcf,'-dpng','-r500',fn)
 im=imread([fn '.png']);
 [i,j]=find(mean(im,3)<255);margin=2;
