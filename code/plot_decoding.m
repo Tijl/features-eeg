@@ -9,7 +9,7 @@ ft_defaults;
 
 res_cell = {};
 for s=1:16
-    x=load(sprintf('../results/sub-%02i_decoding_searchlight.mat',s));
+    x=load(sprintf('./results/sub-%02i_decoding_searchlight.mat',s));
     res_cell{s} = x.res;
 end
 res_searchlight = cosmo_fx(cosmo_stack(res_cell),@mean,{'soaduration','targetfeature'});
@@ -22,7 +22,7 @@ cfg={};
 ft = ft_timelockanalysis(cfg,cosmo_map2meeg(res_searchlight));
 
 %% plot
-load('../results/stats_decoding.mat')
+load('./results/stats_decoding.mat')
 
 f=figure(1);clf
 f.Position = [f.Position(1:2) 800 1000];
@@ -146,7 +146,7 @@ end
 
 %% timegens
 
-load('../results/stats_timegen.mat')
+load('./results/stats_timegen.mat')
 
 %cmap = brewermap(1000,'PiYG');
 cmap = cividis();
