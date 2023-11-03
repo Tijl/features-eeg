@@ -85,7 +85,7 @@ for d=1:2
 
     %% saving
     if d == 1
-        fn = sprintf('figures/Figure3_decoding_interaction_peak%s',durations{d});
+        fn = sprintf('figures/Figure4_decoding_interaction_peak%s',durations{d});
     else
         fn = sprintf('figures/Supp_decoding_interaction_peak%s',durations{d});        
     end

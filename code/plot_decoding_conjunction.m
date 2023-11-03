@@ -140,7 +140,7 @@ for d=1:2 % only plot soa150
 
     %% save
     if d ==1 
-        fn = sprintf('figures/Figure4_%s',durations{d});
+        fn = sprintf('figures/Figure5_%s',durations{d});
     else
         fn = sprintf('figures/Supp_conjunction_%s',durations{d});
     end

@@ -66,7 +66,7 @@ for d = 1:length(dur)
         fprintf('Calculating onsets for %s\n',s.targetname)
         
         % group mean onset & peak
-        [xo,ot] = max(movmean(s.bf>6,[0 2])==1); % onset 3 consecutive tp BF>6
+        [xo,ot] = max(movmean(s.bf>10,[0 2])==1); % onset 3 consecutive tp BF>10
         [~,peak] = max(s.mu); % peak
 
         % jackknife method on bayesfactors to get distribution of BFs
@@ -77,7 +77,7 @@ for d = 1:length(dur)
         end
         b = bayesfactor_R_wrapper(x',...
             'returnindex',2,'verbose',false,'args','mu=0.5,rscale="medium",nullInterval=c(-Inf,0.5)');
-        s.bf_jackknife = reshape(b,[],size(combs,1)); %[~,onsets] = max(movmean(bf_jackknife>6,[0 2])==1);
+        s.bf_jackknife = reshape(b,[],size(combs,1)); 
         
         % get onsets and peaks per jackknife
         onset_jack = [];peak_jack=[];
@@ -86,9 +86,9 @@ for d = 1:length(dur)
             
             bfj = s.bf_jackknife(:,b); % bfs for that perm
             
-            % get onsets (first three consecutive time points BF>6)
-            exc = movmean(bfj>6,[0 2])==1;
-            if sum(exc)>0 % don't count when there is no onset
+            % get onsets (first three consecutive time points BF>10)
+            exc = movmean(bfj>10,[0 2])==1;
+            if sum(exc)>0 % is there is an onset
                 [~,t] = max(exc);
                 xx=xx+1;
                 onset_jack(xx) = t;

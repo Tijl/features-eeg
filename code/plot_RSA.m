@@ -215,7 +215,6 @@ else
     fprintf('done\n')
     % save RDM
     save('results/stats_rsa.mat','rmodel','rmodel_bf','beh')
-    
 end
 
 
@@ -261,7 +260,8 @@ co = tab10;%vega10;
 
 for m = 1:5 % feature models
     s=subplot(7,5,m)
-    s.Position(4) = s.Position(4)+.03
+    s.Position(1) = s.Position(1)-.03;
+    s.Position(4) = s.Position(4)+.03;
     imagesc(squareform(modelvec(:,m)))
     
     % colour
@@ -269,6 +269,7 @@ for m = 1:5 % feature models
         linspace(1,co(m,2),4);...
         linspace(1,co(m,3),4)]';
     colormap(gca,co3)
+    colormap(gray)
     axis square
     set(gca,'Fontsize',12)
     title(mnames{m},'Color',co(m,:))
@@ -276,10 +277,10 @@ for m = 1:5 % feature models
 end
 
 %% plot behaviour mds
-a=subplot(7,2,[6 6+2 6+4 6+6 6+8]);hold on
+a=subplot(7,2,[5 5+2 5+4 5+6 5+8]);hold on
 a.FontSize=12;
 a.Position(1) = a.Position(1)-.03;
-a.Position(2) = a.Position(2)-.1;
+a.Position(2) = a.Position(2)-.1-.02;
 a.Position(4) = a.Position(4) + .03;
 X=X1;
 aw=range(X(:))*.02;
@@ -299,28 +300,40 @@ axis off
 
 [r p] = corr(modelvec,'type','Spearman');
 
-a=subplot(7,2,4)
-a.Position = [a.Position(1) a.Position(2)-.09 a.Position(3) a.Position(4)+.05]
+a=subplot(7,4,5)
+a.Position = [a.Position(1)-.03 a.Position(2)-.09-.02 a.Position(3) a.Position(4)+.05]
 set(gca, 'Fontsize',12)
-b=bar(r(5,[1:4 6:end]));
+b=bar(r(5,1:4));
 for f = 1:4
     b.FaceColor = 'flat' ; b.CData (f,:) = co(f,:);
 end
-for f = 5:10
+set(gca,'XTickLabel',mnames([1:4 6:end]))
+ylabel('Correlation')
+box off
+ylim([0 0.6])
+title('Features')
+
+a=subplot(7,4,6)
+a.Position = [a.Position(1)-.03 a.Position(2)-.09-.02 a.Position(3) a.Position(4)+.05]
+set(gca, 'Fontsize',12)
+b=bar(r(5,6:11));
+for f = 1:6
     b.FaceColor = 'flat' ; b.CData (f,:) = [0 0 0];
 end
-set(gca,'XTickLabel',mnames([1:4 6:end]))
-ylabel('Correlation with perceptual model')
+set(gca,'XTickLabel',mnames(6:end))
+% ylabel('Correlation')
+title('Conjunctions')
 box off
-
+ylim([0 0.6])
 
 %% plot neural-behaviour correlations
-plotnr = 2;
+plotnr = 3;
 co = tab10(5);
 
 for d=1:2
     plotnr=plotnr+(d-1)*5+1;
     a = subplot(7,2,[plotnr plotnr+2]);hold on
+    a.Position(2) = a.Position(2)+0.02*(d-1)-.02
     a.Position(4) = a.Position(4)-.02;
     a.FontSize=12;a.ColorOrder=co;
     
@@ -352,49 +365,49 @@ for d=1:2
     xlabel('Time (ms)')
     
     legend(sprintf('%.2f Hz',1000/durations(d)))
-%     t=title(sprintf('%.2f Hz EEG-behaviour correlation',1000/durations(d)));
-%     t.Position(2) = t.Position(2)+.005;
+    %     t=title(sprintf('%.2f Hz EEG-behaviour correlation',1000/durations(d)));
+    %     t.Position(2) = t.Position(2)+.005;
     ylabel('Correlation')
     drawnow
 end
 
 %% plot BF
-plotnr = 6;
+plotnr = 7;
 for d=1:2
     plotnr=plotnr+1+(d-1)*5;
     a = subplot(7,2,plotnr); %make a plot, then split it in 5 plots later
+    a.Position(4) = a.Position(4)+.07;
+    a.Position(2) = a.Position(2)-.07+.03*(d-1)-.02;
     a.FontSize=12;
     axis off
     apos = a.Position;
     apos(2) = apos(2)-.015;
     XX=[];
-    for i=5
-        a2 = axes('Position',[apos(1),apos(2)+apos(4)-apos(4)./3,apos(3),apos(4)./5]);
-        a2.FontSize = 12;hold on
-        
-        bf = rmodel_bf(:,i,d);
-        
-        plot(tv,1+0*tv,'k-');
-        
-        co3 = [.5 .5 .5;1 1 1;co(i,:)];
-        idx = [bf<1/10,1/10<bf & bf<10,bf>10]';
-        for c=1:3
-            x = tv(idx(c,:));
-            y = bf(idx(c,:));
-            if ~isempty(x)
-                stem(x,y,'Marker','o','Color',.6*[1 1 1],'BaseValue',1,'MarkerSize',5,'MarkerFaceColor',co3(c,:),'Clipping','off');
-                plot(x,y,'o','Color',.6*[1 1 1],'MarkerSize',5,'MarkerFaceColor',co3(c,:),'Clipping','off');
-            end
+    i=5
+    a2 = axes('Position',[apos(1),apos(2)+apos(4)-apos(4)./3,apos(3),apos(4)./5]);
+    a2.FontSize = 12;hold on
+    
+    bf = rmodel_bf(:,i,d);
+    
+    plot(tv,1+0*tv,'k-');
+    
+    co3 = [.5 .5 .5;1 1 1;co(i,:)];
+    idx = [bf<1/10,1/10<bf & bf<10,bf>10]';
+    for c=1:3
+        x = tv(idx(c,:));
+        y = bf(idx(c,:));
+        if ~isempty(x)
+            stem(x,y,'Marker','o','Color',.6*[1 1 1],'BaseValue',1,'MarkerSize',5,'MarkerFaceColor',co3(c,:),'Clipping','off');
+            plot(x,y,'o','Color',.6*[1 1 1],'MarkerSize',5,'MarkerFaceColor',co3(c,:),'Clipping','off');
         end
-        a2.YScale='log';
-        a2.YLim = 10.^(6*[-1 1]);
-        a2.YTick = 10.^(5*[-1  1]);
-        a2.Color = .9*[1 1 1];
-        a2.XLim = minmax(tv);
-        ylabel('Bayes Factor')
-        xlabel('Time (ms)')
-        
     end
+    a2.YScale='log';
+    a2.YLim = 10.^(6*[-1 1]);
+    a2.YTick = 10.^(5*[-1  1]);
+    a2.Color = .9*[1 1 1];
+    a2.XLim = minmax(tv);
+    ylabel('Bayes Factor')
+    xlabel('Time (ms)')
 end
 
 
@@ -403,17 +416,17 @@ end
 annotation('textbox',[0.05 .905 .1 .1],...
     'String','A. Stimulus models','FontSize',18,'LineStyle','none')
 
-annotation('textbox',[0.05 .73 .1 .1],...
-    'String','B. EEG-perceptual correlation','FontSize',18,'LineStyle','none')
+annotation('textbox',[0.05 .71 .1 .1],...
+    'String','B. Correlation with perceptual model','FontSize',18,'LineStyle','none')
 
-annotation('textbox',[0.5 .73 .1 .1],...
-    'String','C. Correlation with perceptual model','FontSize',18,'LineStyle','none')
+annotation('textbox',[0.5 .71 .1 .1],...
+    'String','D. EEG-perceptual correlation','FontSize',18,'LineStyle','none')
 
-annotation('textbox',[0.5 .42 .1 .1],...
-    'String','D. Perceptual similarity','FontSize',18,'LineStyle','none')
+annotation('textbox',[0.05 .4 .1 .1],...
+    'String','C. Perceptual similarity','FontSize',18,'LineStyle','none')
 
 %% save
-fn = 'figures/Figure5';
+fn = 'figures/Figure6';
 tn = tempname;
 print(gcf,'-dpng','-r500',tn)
 im=imread([tn '.png']);

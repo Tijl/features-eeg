@@ -58,7 +58,7 @@ for d=1:2
         drawnow
 
     end
-    text(min(s.onsetci)-90,0.47-.015,'onset')
+    text(min(s.onsetci)-100,0.47-.015,'onset')
     text(max(s.peakci)+40,0.47-.015,'peak')
 
     legend(h)
@@ -202,7 +202,7 @@ annotation('textbox',[0.05 .255 .1 .1],...
     'String','B','FontSize',20,'LineStyle','none')
 
 %% save
-fn = '../figures/Figure2';
+fn = './figures/Figure2';
 print(gcf,'-dpng','-r500',fn)
 im=imread([fn '.png']);
 [i,j]=find(mean(im,3)<255);margin=2;
